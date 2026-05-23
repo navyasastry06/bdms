@@ -1,6 +1,7 @@
 const DonorProfile = require('../models/DonorProfile');
 const Donation = require('../models/Donation');
 const Camp = require('../models/Camp');
+const { createNotification } = require('../services/notificationService');
 
 /* ==================== GET DONOR DASHBOARD ==================== */
 const getDashboard = async (req, res) => {
@@ -128,6 +129,14 @@ const registerForCamp = async (req, res) => {
     camp.registeredDonors.push(req.user.id);
     await camp.save();
 
+    // Notify donor about registration
+    await createNotification(
+      req.user.id,
+      'Camp Registration Confirmed',
+      `You have successfully registered for the donation camp "${camp.name}" scheduled on ${new Date(camp.date).toLocaleDateString()} at ${camp.venue}.`,
+      'success'
+    );
+
     res.json({ success: true, message: 'Successfully registered for the camp!' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to register for camp.' });
@@ -148,6 +157,14 @@ const unregisterFromCamp = async (req, res) => {
       donorId => donorId.toString() !== req.user.id.toString()
     );
     await camp.save();
+
+    // Notify donor about cancellation
+    await createNotification(
+      req.user.id,
+      'Camp Registration Cancelled',
+      `Your registration for the donation camp "${camp.name}" has been cancelled.`,
+      'info'
+    );
 
     res.json({ success: true, message: 'Successfully unregistered from the camp.' });
   } catch (error) {

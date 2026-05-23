@@ -5,6 +5,7 @@ const BloodRequest = require('../models/BloodRequest');
 const BloodInventory = require('../models/BloodInventory');
 const Camp = require('../models/Camp');
 const Donation = require('../models/Donation');
+const { createNotification, notifyAdmins } = require('../services/notificationService');
 
 /* ==================== GET ADMIN DASHBOARD ==================== */
 const getDashboard = async (req, res) => {
@@ -116,11 +117,27 @@ const updateRequestStatus = async (req, res) => {
 
     /* If fulfilled, deduct from inventory */
     if (status === 'Fulfilled') {
-      await BloodInventory.findOneAndUpdate(
+      const inventoryItem = await BloodInventory.findOneAndUpdate(
         { bloodGroup: request.bloodGroup },
-        { $inc: { unitsAvailable: -request.unitsRequired }, lastUpdated: new Date(), updatedBy: req.user.id }
+        { $inc: { unitsAvailable: -request.unitsRequired }, lastUpdated: new Date(), updatedBy: req.user.id },
+        { new: true }
       );
+      
+      /* Low stock threshold alert */
+      if (inventoryItem && inventoryItem.unitsAvailable <= inventoryItem.thresholdLevel) {
+        await notifyAdmins(
+          'Low Blood Stock Alert',
+          `Blood group ${request.bloodGroup} has fallen below threshold. Current: ${inventoryItem.unitsAvailable} units (Threshold: ${inventoryItem.thresholdLevel}).`,
+          'alert'
+        );
+      }
     }
+
+    // Notify requesting hospital about status update
+    const title = `Blood Request ${status}`;
+    const message = `Your emergency blood request for ${request.patientName} (${request.bloodGroup}, ${request.unitsRequired} units) has been ${status.toLowerCase()}.${notes ? ' Admin note: ' + notes : ''}`;
+    const type = status === 'Rejected' ? 'warning' : status === 'Fulfilled' ? 'success' : 'info';
+    await createNotification(request.requestedBy, title, message, type);
 
     res.json({ success: true, message: `Request ${status.toLowerCase()} successfully.`, request });
   } catch (error) {
@@ -342,6 +359,14 @@ const recordDonation = async (req, res) => {
         updatedBy: req.user.id
       },
       { upsert: true }
+    );
+
+    // Notify donor
+    await createNotification(
+      donorId,
+      'Blood Donation Recorded',
+      `Thank you! Your donation of ${units || 1} unit(s) of ${bloodGroup} blood at ${location} has been successfully recorded.`,
+      'success'
     );
 
     res.status(201).json({ success: true, message: 'Donation recorded successfully.', donation });

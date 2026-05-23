@@ -28,7 +28,13 @@ const LoginPage = () => {
       const role = result.user.role;
       
       /* Redirect logic: Check if they tried to access a protected route before logging in */
-      const origin = location.state?.from?.pathname || ROLE_CONFIG[role]?.dashboardPath || '/';
+      let origin = location.state?.from?.pathname || ROLE_CONFIG[role]?.dashboardPath || '/';
+      
+      /* Sanitize legacy '/dashboard' paths that might be stuck in router state from before the fix */
+      if (origin.endsWith('/dashboard')) {
+        origin = origin.replace('/dashboard', '');
+      }
+      
       navigate(origin, { replace: true });
       
     } catch (err) {

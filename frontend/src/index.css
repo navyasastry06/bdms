@@ -64,6 +64,13 @@ a:hover {
   border: 1px solid var(--border-light);
   border-radius: 16px;
   box-shadow: var(--shadow-soft);
+  transition: var(--transition);
+}
+
+.hover-red-outline:hover {
+  border-color: var(--primary-red) !important;
+  box-shadow: 0 10px 25px -5px rgba(225, 29, 72, 0.15), 0 8px 10px -6px rgba(225, 29, 72, 0.1) !important;
+  transform: translateY(-5px);
 }
 
 /* Base Form Elements */
@@ -147,4 +154,23 @@ a:hover {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+}
+
+/* Mobile Responsiveness for Layout */
+@media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: flex !important;
+  }
+  .layout-container main {
+    margin-left: 0 !important;
+  }
+  .layout-container header {
+    padding: 0 16px !important;
+  }
+  .user-details {
+    display: none !important;
+  }
+  .layout-container .pageContent {
+    padding: 16px !important;
+  }
 }

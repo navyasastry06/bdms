@@ -12,6 +12,11 @@ const bloodInventorySchema = new mongoose.Schema({
     default: 0,
     min: [0, 'Units cannot be negative']
   },
+  thresholdLevel: {
+    type: Number,
+    default: 10,
+    min: [0, 'Threshold cannot be negative']
+  },
   lastUpdated: {
     type: Date,
     default: Date.now

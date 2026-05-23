@@ -1,14 +1,14 @@
 export const ROLE_CONFIG = {
   donor: {
-    dashboardPath: '/donor/dashboard',
+    dashboardPath: '/donor',
     allowedPaths: ['/donor']
   },
   hospital: {
-    dashboardPath: '/hospital/dashboard',
+    dashboardPath: '/hospital',
     allowedPaths: ['/hospital']
   },
   admin: {
-    dashboardPath: '/admin/dashboard',
+    dashboardPath: '/admin',
     allowedPaths: ['/admin']
   }
 };

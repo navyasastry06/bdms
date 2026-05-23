@@ -1,3 +1,11 @@
+const dns = require('dns');
+// Set DNS servers to Google and Cloudflare to resolve querySrv issues with MongoDB Atlas
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (err) {
+  console.warn('Warning: Could not set custom DNS servers:', err.message);
+}
+
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -34,6 +42,7 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/donor', require('./routes/donorRoutes'));
 app.use('/api/hospital', require('./routes/hospitalRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 /* Health check */
 app.get('/api/health', (req, res) => {

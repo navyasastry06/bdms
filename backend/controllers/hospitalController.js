@@ -1,6 +1,7 @@
 const BloodRequest = require('../models/BloodRequest');
 const BloodInventory = require('../models/BloodInventory');
 const HospitalProfile = require('../models/HospitalProfile');
+const { createNotification, notifyAdmins } = require('../services/notificationService');
 
 /* ==================== GET HOSPITAL DASHBOARD ==================== */
 const getDashboard = async (req, res) => {
@@ -96,6 +97,21 @@ const createRequest = async (req, res) => {
       contactNumber,
       reason
     });
+
+    // Notify hospital
+    await createNotification(
+      req.user.id,
+      'Blood Request Submitted',
+      `Your request for ${unitsRequired} units of ${bloodGroup} for patient ${patientName} has been submitted and is pending approval.`,
+      'info'
+    );
+
+    // Notify admins
+    await notifyAdmins(
+      'New Blood Request Pending',
+      `Hospital ${hospitalName} has submitted a ${urgency.toLowerCase()} request for ${unitsRequired} units of ${bloodGroup}.`,
+      urgency === 'Critical' ? 'alert' : 'info'
+    );
 
     res.status(201).json({
       success: true,
