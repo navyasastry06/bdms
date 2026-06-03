@@ -14,7 +14,10 @@ const getTransporter = async () => {
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
-      }
+      },
+      connectionTimeout: 5000, // 5 seconds to prevent hanging
+      greetingTimeout: 5000,
+      socketTimeout: 5000
     });
     console.log('Nodemailer SMTP Transporter configured using env variables.');
     return transporter;
@@ -23,7 +26,11 @@ const getTransporter = async () => {
   // Fallback: Try to create a test Ethereal account, or fall back to log to console
   try {
     console.log('SMTP settings not fully configured in env. Attempting to create an Ethereal test account...');
-    const testAccount = await nodemailer.createTestAccount();
+    // Ethereal creation is notoriously slow and hangs in production, so we limit it
+    const testAccount = await Promise.race([
+      nodemailer.createTestAccount(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Ethereal timeout')), 5000))
+    ]);
     transporter = nodemailer.createTransport({
       host: 'smtp.ethereal.email',
       port: 587,
@@ -31,7 +38,10 @@ const getTransporter = async () => {
       auth: {
         user: testAccount.user,
         pass: testAccount.pass
-      }
+      },
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000
     });
     console.log('Nodemailer Ethereal Transporter configured successfully.');
     console.log(`Ethereal email credentials: User: ${testAccount.user}, Pass: ${testAccount.pass}`);
@@ -93,7 +103,9 @@ const sendOTPEmail = async (email, name, otp) => {
     return info;
   } catch (error) {
     console.error('Error sending OTP email:', error.message);
-    throw new Error('Failed to send verification email. Please try again.');
+    // We catch the error instead of throwing it so the API request doesn't crash.
+    // The user can check the Render console for the OTP code.
+    return false;
   }
 };
 
