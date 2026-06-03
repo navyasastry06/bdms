@@ -17,7 +17,8 @@ const getTransporter = async () => {
       },
       connectionTimeout: 5000, // 5 seconds to prevent hanging
       greetingTimeout: 5000,
-      socketTimeout: 5000
+      socketTimeout: 5000,
+      family: 4 // Force IPv4 routing to bypass Render's IPv6 ENETUNREACH error
     });
     console.log('Nodemailer SMTP Transporter configured using env variables.');
     return transporter;
