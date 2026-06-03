@@ -1,4 +1,11 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+
+// Force Node.js to use IPv4 instead of IPv6 for all network connections.
+// This completely bypasses Render's ENETUNREACH IPv6 block for outgoing emails.
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 let transporter = null;
 
