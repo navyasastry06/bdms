@@ -135,14 +135,10 @@ const register = async (req, res) => {
       });
     }
 
-    /* Verify if the mailbox exists on the remote mail server (SMTP check) */
-    const isMailboxValid = await verifyMailbox(normalizedEmail);
-    if (!isMailboxValid) {
-      return res.status(400).json({
-        success: false,
-        message: 'The email address does not exist on this mail server.'
-      });
-    }
+    /* We have removed the strict SMTP mailbox verification (port 25) because 
+       many cloud hosts (like Render, AWS) block outgoing port 25 by default,
+       which causes a 4-second timeout delay on every registration attempt.
+       We now rely solely on MX record validation and the actual OTP email delivery. */
 
     /* Check if user already exists */
     const existingUser = await User.findOne({ email: normalizedEmail });
@@ -785,14 +781,7 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    /* Verify if the mailbox exists on the remote mail server (SMTP check) */
-    const isMailboxValid = await verifyMailbox(normalizedEmail);
-    if (!isMailboxValid) {
-      return res.status(400).json({
-        success: false,
-        message: 'The email address does not exist on this mail server.'
-      });
-    }
+    /* We rely solely on MX record validation and the actual password reset email delivery. */
 
     const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
