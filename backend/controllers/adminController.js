@@ -471,7 +471,10 @@ const recordDonation = async (req, res) => {
     res.status(201).json({ success: true, message: 'Donation recorded successfully.', donation });
   } catch (error) {
     console.error('Record donation error:', error);
-    res.status(500).json({ success: false, message: 'Failed to record donation.' });
+    const validationMessage = error.name === 'ValidationError'
+      ? Object.values(error.errors).map(err => err.message).join(', ')
+      : 'Failed to record donation.';
+    res.status(error.name === 'ValidationError' ? 400 : 500).json({ success: false, message: validationMessage });
   }
 };
 

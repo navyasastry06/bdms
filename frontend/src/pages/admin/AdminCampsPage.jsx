@@ -191,7 +191,7 @@ const AdminCampsPage = () => {
         await initData();
       }
     } catch (error) {
-      alert('Failed to record donation.');
+      alert(error.response?.data?.message || 'Failed to record donation.');
     } finally {
       setSavingDonation(false);
     }
