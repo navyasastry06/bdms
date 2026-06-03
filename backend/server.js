@@ -40,6 +40,7 @@ app.use(cookieParser());
 /* API Routes */
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/donor', require('./routes/donorRoutes'));
+app.use('/api/patient', require('./routes/patientRoutes'));
 app.use('/api/hospital', require('./routes/hospitalRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));

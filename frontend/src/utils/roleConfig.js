@@ -11,4 +11,6 @@ export const ROLE_CONFIG = {
     dashboardPath: '/admin',
     allowedPaths: ['/admin']
   }
+  /* Note: 'patient' role is no longer a self-service portal.
+     Patients are records managed under hospital accounts. */
 };

@@ -18,7 +18,7 @@ import authService from '../../services/authService';
 import notificationService from '../../services/notificationService';
 
 const DashboardLayout = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, activeRole } = useAuth();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -26,7 +26,8 @@ const DashboardLayout = () => {
 
   const fetchNotifications = async () => {
     try {
-      const res = await notificationService.getNotifications();
+      const currentRole = user?.isDualRole ? (activeRole || user?.role) : user?.role;
+      const res = await notificationService.getNotifications(currentRole);
       if (res.success) {
         setNotifications(res.notifications || []);
       }
@@ -38,10 +39,10 @@ const DashboardLayout = () => {
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      const interval = setInterval(fetchNotifications, 15000); // Poll every 15s
+      const interval = setInterval(fetchNotifications, 15000);
       return () => clearInterval(interval);
     }
-  }, [user]);
+  }, [user, activeRole]);
 
   const handleMarkAsRead = async (id) => {
     try {
@@ -54,7 +55,8 @@ const DashboardLayout = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await notificationService.markAllAsRead();
+      const currentRole = user?.isDualRole ? (activeRole || user?.role) : user?.role;
+      await notificationService.markAllAsRead(currentRole);
       fetchNotifications();
     } catch (error) {
       console.error('Failed to mark all as read:', error);
@@ -63,7 +65,8 @@ const DashboardLayout = () => {
 
   const handleClearAll = async () => {
     try {
-      await notificationService.clearAll();
+      const currentRole = user?.isDualRole ? (activeRole || user?.role) : user?.role;
+      await notificationService.clearAll(currentRole);
       fetchNotifications();
     } catch (error) {
       console.error('Failed to clear notifications:', error);
@@ -79,8 +82,8 @@ const DashboardLayout = () => {
   };
 
   const getNavLinks = () => {
-    const role = user?.role;
-    
+    const role = activeRole || user?.role;
+
     if (role === 'admin') {
       return [
         { path: '/admin', icon: <LayoutDashboard size={20} />, label: 'Dashboard', exact: true },
@@ -91,24 +94,26 @@ const DashboardLayout = () => {
         { path: '/admin/reports', icon: <BarChart2 size={20} />, label: 'Analytics Reports' },
       ];
     }
-    
+
     if (role === 'hospital') {
       return [
         { path: '/hospital', icon: <LayoutDashboard size={20} />, label: 'Dashboard', exact: true },
-        { path: '/hospital/requests', icon: <FileText size={20} />, label: 'My Requests' },
-        { path: '/hospital/request-blood', icon: <Droplet size={20} />, label: 'Request Blood' },
+        { path: '/hospital/patients', icon: <Users size={20} />, label: 'Patients' },
+        { path: '/hospital/add-patient', icon: <Building2 size={20} />, label: 'Add Patient' },
+        { path: '/hospital/requests', icon: <FileText size={20} />, label: 'Blood Requests' },
+        { path: '/hospital/request-blood', icon: <Droplet size={20} />, label: 'New Request' },
       ];
     }
-    
+
     if (role === 'donor') {
       return [
         { path: '/donor', icon: <LayoutDashboard size={20} />, label: 'Dashboard', exact: true },
         { path: '/donor/history', icon: <Droplet size={20} />, label: 'Donation History' },
         { path: '/donor/camps', icon: <Calendar size={20} />, label: 'Upcoming Camps' },
-        { path: '/donor/profile', icon: <Users size={20} />, label: 'My Profile' },
+        { path: '/donor/profile', icon: <Users size={20} />, label: 'My Profile & Eligibility' },
       ];
     }
-    
+
     return [];
   };
 
@@ -118,10 +123,8 @@ const DashboardLayout = () => {
     <div className="layout-container" style={styles.container}>
       {/* Sidebar - Desktop & Mobile */}
       <aside style={{
-        ...styles.sidebar, 
-        transform: isMobileMenuOpen ? 'translateX(0)' : '',
-        '@media (max-width: 768px)': { transform: isMobileMenuOpen ? 'translateX(0)' : 'translateX(-100%)' }
-      }} className="glass-panel sidebar-nav">
+        ...styles.sidebar
+      }} className={`glass-panel sidebar-nav ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div style={styles.logoContainer}>
           <Droplet color="var(--primary-red)" size={28} fill="var(--primary-red)" />
           <h2 style={styles.logoText}>Raktha Bandhu</h2>
@@ -169,6 +172,8 @@ const DashboardLayout = () => {
           </div>
           
           <div style={styles.headerRight}>
+            {/* No portal-switching inside dashboard — users must logout to switch portals */}
+
             <div style={{ position: 'relative' }}>
               <button 
                 style={styles.iconBtn} 
@@ -249,7 +254,7 @@ const DashboardLayout = () => {
               </div>
               <div className="user-details" style={{display: 'flex', flexDirection: 'column'}}>
                 <span style={styles.userName}>{user?.name}</span>
-                <span style={styles.userRole}>{user?.role}</span>
+                <span style={styles.userRole}>{activeRole || user?.role}</span>
               </div>
             </div>
           </div>

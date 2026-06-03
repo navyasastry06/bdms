@@ -1,13 +1,14 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 
-const createNotification = async (recipientId, title, message, type = 'info') => {
+const createNotification = async (recipientId, title, message, type = 'info', portalRole = null) => {
   try {
     const notification = await Notification.create({
       recipient: recipientId,
       title,
       message,
-      type
+      type,
+      portalRole
     });
     return notification;
   } catch (error) {

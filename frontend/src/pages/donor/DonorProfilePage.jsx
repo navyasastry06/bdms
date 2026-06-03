@@ -5,6 +5,7 @@ import donorService from '../../services/donorService';
 const DonorProfilePage = () => {
   const [profile, setProfile] = useState({
     age: '',
+    gender: '',
     phone: '',
     address: { street: '', city: '', state: '', pincode: '' },
     medicalConditions: '',
@@ -21,6 +22,7 @@ const DonorProfilePage = () => {
         if (res.success && res.profile) {
           setProfile({
             age: res.profile.age || '',
+            gender: res.profile.gender || '',
             phone: res.profile.phone || '',
             address: {
               street: res.profile.address?.street || '',
@@ -147,20 +149,35 @@ const DonorProfilePage = () => {
           <h3 style={{ fontSize: '1.1rem', color: 'var(--primary-red)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <User size={18} /> General Information
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: '600' }}>Age (18-65)</label>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: '600' }}>Age (18-60)</label>
               <input 
                 type="number" 
                 name="age" 
                 min="18" 
-                max="65" 
+                max="60" 
                 value={profile.age} 
                 onChange={handleChange} 
                 className="input-base" 
-                placeholder="Enter your age" 
+                placeholder="Enter age" 
                 required 
               />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: '600' }}>Gender</label>
+              <select 
+                name="gender" 
+                value={profile.gender} 
+                onChange={handleChange} 
+                className="input-base" 
+                required
+              >
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: '600' }}>Phone Number (10 digits)</label>

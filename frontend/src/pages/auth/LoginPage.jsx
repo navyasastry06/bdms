@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { BiDroplet } from 'react-icons/bi';
 import useAuth from '../../hooks/useAuth';
@@ -10,9 +10,21 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, isAuthenticated, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (!loading && isAuthenticated && user) {
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else if (user.isDualRole) {
+        navigate('/choose-portal');
+      } else {
+        navigate(ROLE_CONFIG[user.role]?.dashboardPath || '/');
+      }
+    }
+  }, [isAuthenticated, user, loading, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -25,20 +37,50 @@ const LoginPage = () => {
     
     try {
       const result = await login(formData);
-      const role = result.user.role;
-      
+      const loggedInUser = result.user;
+
+      /* Admin users — redirect straight to admin dashboard */
+      if (loggedInUser.role === 'admin') {
+        navigate('/admin', { replace: true });
+        return;
+      }
+
+      if (loggedInUser.isDualRole) {
+        navigate('/choose-portal', { replace: true });
+        return;
+      }
+
+      const role = loggedInUser.role;
+
       /* Redirect logic: Check if they tried to access a protected route before logging in */
       let origin = location.state?.from?.pathname || ROLE_CONFIG[role]?.dashboardPath || '/';
-      
-      /* Sanitize legacy '/dashboard' paths that might be stuck in router state from before the fix */
+
+      /* Sanitize legacy '/dashboard' paths */
       if (origin.endsWith('/dashboard')) {
         origin = origin.replace('/dashboard', '');
       }
-      
+
+      /* Validate if the user's role is allowed to access the origin path */
+      const isRouteAllowedForRole = (path, userRole) => {
+        if (path.startsWith('/admin') && userRole !== 'admin') return false;
+        if (path.startsWith('/donor') && userRole !== 'donor') return false;
+        if (path.startsWith('/hospital') && userRole !== 'hospital') return false;
+        return true;
+      };
+
+      if (!isRouteAllowedForRole(origin, role)) {
+        origin = ROLE_CONFIG[role]?.dashboardPath || '/';
+      }
+
       navigate(origin, { replace: true });
       
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to login. Please try again.');
+      if (err.response?.data?.isVerified === false) {
+        const unverifiedEmail = err.response.data.email || formData.email;
+        navigate(`/otp-verify?email=${encodeURIComponent(unverifiedEmail)}`);
+      } else {
+        setError(err.response?.data?.message || 'Failed to login. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -70,7 +112,10 @@ const LoginPage = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label htmlFor="password" style={{ margin: 0 }}>Password</label>
+              <Link to="/forgot-password" style={{ fontSize: '0.85rem', fontWeight: '500' }}>Forgot Password?</Link>
+            </div>
             <input
               type="password"
               id="password"

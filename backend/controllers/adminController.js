@@ -87,7 +87,7 @@ const getAllRequests = async (req, res) => {
   try {
     const requests = await BloodRequest.find()
       .sort({ createdAt: -1 })
-      .populate('requestedBy', 'name email');
+      .populate('requestedBy', 'name email role');
 
     res.json({ success: true, requests });
   } catch (error) {
@@ -109,7 +109,7 @@ const updateRequestStatus = async (req, res) => {
         approvedAt: (status === 'Approved' || status === 'Fulfilled') ? new Date() : null
       },
       { new: true, runValidators: true }
-    );
+    ).populate('requestedBy', 'role');
 
     if (!request) {
       return res.status(404).json({ success: false, message: 'Request not found.' });
@@ -120,7 +120,7 @@ const updateRequestStatus = async (req, res) => {
       const inventoryItem = await BloodInventory.findOneAndUpdate(
         { bloodGroup: request.bloodGroup },
         { $inc: { unitsAvailable: -request.unitsRequired }, lastUpdated: new Date(), updatedBy: req.user.id },
-        { new: true }
+        { new: true, runValidators: true }
       );
       
       /* Low stock threshold alert */
@@ -133,11 +133,15 @@ const updateRequestStatus = async (req, res) => {
       }
     }
 
-    // Notify requesting hospital about status update
+    // Notify requesting user (hospital or patient) about status update
     const title = `Blood Request ${status}`;
     const message = `Your emergency blood request for ${request.patientName} (${request.bloodGroup}, ${request.unitsRequired} units) has been ${status.toLowerCase()}.${notes ? ' Admin note: ' + notes : ''}`;
     const type = status === 'Rejected' ? 'warning' : status === 'Fulfilled' ? 'success' : 'info';
-    await createNotification(request.requestedBy, title, message, type);
+    
+    const recipientRole = request.requestedBy?.role || 'hospital';
+    const recipientId = request.requestedBy?._id || request.requestedBy;
+    
+    await createNotification(recipientId, title, message, type, recipientRole);
 
     res.json({ success: true, message: `Request ${status.toLowerCase()} successfully.`, request });
   } catch (error) {
@@ -192,20 +196,63 @@ const getAllCamps = async (req, res) => {
       .sort({ date: -1 })
       .populate('createdBy', 'name');
 
+    // Aggregate completed donation units grouped by campId
+    const donationsGrouped = await Donation.aggregate([
+      { $match: { campId: { $ne: null }, status: 'Completed' } },
+      { $group: { _id: '$campId', totalUnits: { $sum: '$units' } } }
+    ]);
+
+    const donationsMap = {};
+    donationsGrouped.forEach(item => {
+      donationsMap[item._id.toString()] = item.totalUnits;
+    });
+
     const campsData = camps.map(camp => ({
       ...camp.toObject(),
-      registeredCount: camp.registeredDonors.length
+      registeredCount: camp.registeredDonors.length,
+      totalUnitsCollected: donationsMap[camp._id.toString()] || 0
     }));
 
     res.json({ success: true, camps: campsData });
   } catch (error) {
+    console.error('Failed to load camps:', error);
     res.status(500).json({ success: false, message: 'Failed to load camps.' });
   }
 };
 
 const createCamp = async (req, res) => {
   try {
-    const { name, organizer, date, time, venue, city, state, description, maxParticipants } = req.body;
+    const { name, organizer, date, time, venue, city, state, description, maxParticipants, status } = req.body;
+
+    if (date && status) {
+      const campDate = new Date(date);
+      if (isNaN(campDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide a valid camp date.'
+        });
+      }
+
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      campDate.setHours(0,0,0,0);
+
+      if (campDate < today) {
+        if (status === 'Upcoming' || status === 'Ongoing') {
+          return res.status(400).json({
+            success: false,
+            message: 'For past dates, camp status cannot be set to Upcoming or Ongoing.'
+          });
+        }
+      } else if (campDate > today) {
+        if (status === 'Completed' || status === 'Ongoing') {
+          return res.status(400).json({
+            success: false,
+            message: 'For future dates, camp status cannot be set to Completed or Ongoing.'
+          });
+        }
+      }
+    }
 
     const camp = await Camp.create({
       name,
@@ -217,6 +264,7 @@ const createCamp = async (req, res) => {
       state,
       description,
       maxParticipants: maxParticipants || 100,
+      status: status || 'Upcoming',
       createdBy: req.user.id
     });
 
@@ -230,12 +278,45 @@ const createCamp = async (req, res) => {
 const updateCamp = async (req, res) => {
   try {
     const { id } = req.params;
-    const camp = await Camp.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
-
-    if (!camp) {
+    const existingCamp = await Camp.findById(id);
+    if (!existingCamp) {
       return res.status(404).json({ success: false, message: 'Camp not found.' });
     }
 
+    const date = req.body.date !== undefined ? req.body.date : existingCamp.date;
+    const status = req.body.status !== undefined ? req.body.status : existingCamp.status;
+
+    if (date && status) {
+      const campDate = new Date(date);
+      if (isNaN(campDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide a valid camp date.'
+        });
+      }
+
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      campDate.setHours(0,0,0,0);
+
+      if (campDate < today) {
+        if (status === 'Upcoming' || status === 'Ongoing') {
+          return res.status(400).json({
+            success: false,
+            message: 'For past dates, camp status cannot be set to Upcoming or Ongoing.'
+          });
+        }
+      } else if (campDate > today) {
+        if (status === 'Completed' || status === 'Ongoing') {
+          return res.status(400).json({
+            success: false,
+            message: 'For future dates, camp status cannot be set to Completed or Ongoing.'
+          });
+        }
+      }
+    }
+
+    const camp = await Camp.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
     res.json({ success: true, message: 'Camp updated successfully.', camp });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update camp.' });
@@ -331,6 +412,21 @@ const recordDonation = async (req, res) => {
   try {
     const { donorId, bloodGroup, units, location, campId, notes } = req.body;
 
+    // Verify donor eligibility (60 days / 2 months cooldown)
+    const lastDonation = await Donation.findOne({ donorId, status: 'Completed' }).sort({ donationDate: -1 });
+    if (lastDonation) {
+      const nextEligibleDate = new Date(lastDonation.donationDate);
+      nextEligibleDate.setDate(nextEligibleDate.getDate() + 60); // 60 days
+      
+      const today = new Date();
+      if (today < nextEligibleDate) {
+        return res.status(400).json({
+          success: false,
+          message: `Donor is not eligible to donate yet. The 2-month cooldown expires on ${nextEligibleDate.toLocaleDateString()}.`
+        });
+      }
+    }
+
     const donation = await Donation.create({
       donorId,
       bloodGroup,
@@ -366,7 +462,8 @@ const recordDonation = async (req, res) => {
       donorId,
       'Blood Donation Recorded',
       `Thank you! Your donation of ${units || 1} unit(s) of ${bloodGroup} blood at ${location} has been successfully recorded.`,
-      'success'
+      'success',
+      'donor'
     );
 
     res.status(201).json({ success: true, message: 'Donation recorded successfully.', donation });
@@ -391,3 +488,5 @@ module.exports = {
   getReports,
   recordDonation
 };
+
+

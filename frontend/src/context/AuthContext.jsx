@@ -8,10 +8,32 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeRole, setActiveRoleState] = useState(() => {
+    return localStorage.getItem('activeRole') || null;
+  });
+
+  const setActiveRole = (role) => {
+    if (role) {
+      localStorage.setItem('activeRole', role);
+    } else {
+      localStorage.removeItem('activeRole');
+    }
+    setActiveRoleState(role);
+  };
+
 
   /* Silent authentication on mount (check if session is valid) */
   useEffect(() => {
     const checkAuth = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        setUser(null);
+        setProfile(null);
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+
       try {
         const data = await authService.getMe();
         setUser(data.user);
@@ -31,6 +53,12 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (credentials) => {
+    /* Clear existing session before login */
+    localStorage.removeItem('accessToken');
+    setUser(null);
+    setProfile(null);
+    setIsAuthenticated(false);
+
     const data = await authService.login(credentials);
     setUser(data.user);
     setIsAuthenticated(true);
@@ -45,7 +73,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (userData) => {
+    /* Clear existing session before register to prevent token leak or session contamination */
+    localStorage.removeItem('accessToken');
+    setUser(null);
+    setProfile(null);
+    setIsAuthenticated(false);
+
     const data = await authService.register(userData);
+    if (data.isVerified === false) {
+      return data;
+    }
     setUser(data.user);
     setIsAuthenticated(true);
     /* Load profile right after registration */
@@ -58,6 +95,37 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const verifyOtp = async (email, otpCode) => {
+    const data = await authService.verifyOtp(email, otpCode);
+    setUser(data.user);
+    setIsAuthenticated(true);
+    try {
+      const meData = await authService.getMe();
+      if (meData.user) {
+        setUser(meData.user);
+      }
+      setProfile(meData.profile);
+    } catch (e) {
+      console.error("Failed to load profile after OTP verification", e);
+    }
+    return data;
+  };
+
+  const refreshUser = async () => {
+    try {
+      const data = await authService.getMe();
+      setUser(data.user);
+      setProfile(data.profile);
+      setIsAuthenticated(true);
+      return data.user;
+    } catch (error) {
+      setUser(null);
+      setProfile(null);
+      setIsAuthenticated(false);
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       await authService.logout();
@@ -67,6 +135,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setProfile(null);
       setIsAuthenticated(false);
+      setActiveRole(null);
     }
   };
 
@@ -108,7 +177,11 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     register,
-    logout
+    logout,
+    verifyOtp,
+    refreshUser,
+    activeRole,
+    setActiveRole
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -26,12 +26,28 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
+    const { checkUserRoles } = require('../utils/roleUtils');
+    const { isDualRole, roles } = await checkUserRoles(user);
+
     req.user = {
       id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
+      isVerified: user.isVerified,
+      isDualRole,
+      roles
     };
+
+    /* If user is not verified, restrict access to everything except /me and /logout */
+    const isAllowedForUnverified = (req.baseUrl === '/api/auth' && (req.path === '/me' || req.path === '/logout'));
+    if (!user.isVerified && !isAllowedForUnverified) {
+      return res.status(403).json({
+        success: false,
+        isVerified: false,
+        message: 'Account verification required. Please verify your OTP.'
+      });
+    }
 
     next();
   } catch (error) {

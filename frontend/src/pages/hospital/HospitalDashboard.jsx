@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Clock, CheckCircle, Activity, Plus } from 'lucide-react';
+import { FileText, Clock, CheckCircle, Activity, Plus, Users, UserPlus } from 'lucide-react';
 import hospitalService from '../../services/hospitalService';
+import api from '../../services/api';
 
 const HospitalDashboard = () => {
   const [stats, setStats] = useState({
@@ -10,6 +11,7 @@ const HospitalDashboard = () => {
     fulfilledRequests: 0,
     rejectedRequests: 0
   });
+  const [patientCount, setPatientCount] = useState(0);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -23,6 +25,11 @@ const HospitalDashboard = () => {
         const requestsRes = await hospitalService.getMyRequests();
         if (requestsRes.success) {
           setRequests(requestsRes.requests || []);
+        }
+
+        const patientsRes = await api.get('/patient/all');
+        if (patientsRes.data.success) {
+          setPatientCount(patientsRes.data.patients?.length || 0);
         }
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -51,12 +58,43 @@ const HospitalDashboard = () => {
 
       {/* Stats Grid */}
       <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '24px'
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px'
       }}>
+        <StatCard title="Total Patients" value={patientCount} icon={<Users size={24} color="#8b5cf6" />} />
         <StatCard title="Total Requests" value={stats.totalRequests} icon={<FileText size={24} color="#3b82f6" />} />
         <StatCard title="Pending Approval" value={stats.pendingRequests} icon={<Clock size={24} color="#f59e0b" />} />
         <StatCard title="Fulfilled Requests" value={stats.fulfilledRequests} icon={<CheckCircle size={24} color="#10b981" />} />
         <StatCard title="Rejected / Cancelled" value={stats.rejectedRequests} icon={<Activity size={24} color="#e11d48" />} />
+      </div>
+
+      {/* Patient Quick Actions */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+        <div
+          className="glass-panel"
+          onClick={() => navigate('/hospital/patients')}
+          style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '18px', cursor: 'pointer', transition: 'transform 0.15s', borderRadius: '16px' }}
+        >
+          <div style={{ width: '52px', height: '52px', borderRadius: '14px', backgroundColor: 'rgba(139,92,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Users size={24} color="#8b5cf6" />
+          </div>
+          <div>
+            <h4 style={{ margin: 0, color: 'var(--text-main)', fontWeight: '700' }}>View Patients</h4>
+            <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Manage {patientCount} registered patient{patientCount !== 1 ? 's' : ''}</p>
+          </div>
+        </div>
+        <div
+          className="glass-panel"
+          onClick={() => navigate('/hospital/add-patient')}
+          style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '18px', cursor: 'pointer', transition: 'transform 0.15s', borderRadius: '16px' }}
+        >
+          <div style={{ width: '52px', height: '52px', borderRadius: '14px', backgroundColor: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <UserPlus size={24} color="#10b981" />
+          </div>
+          <div>
+            <h4 style={{ margin: 0, color: 'var(--text-main)', fontWeight: '700' }}>Add Patient</h4>
+            <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Register a new patient record</p>
+          </div>
+        </div>
       </div>
 
       {/* Recent Activity */}

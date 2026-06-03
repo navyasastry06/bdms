@@ -9,8 +9,10 @@ const AdminInventoryPage = () => {
   const [editForm, setEditForm] = useState({ unitsAvailable: '', thresholdLevel: '' });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchInventory = async () => {
+    setRefreshing(true);
     try {
       const res = await adminService.getInventory();
       if (res.success) {
@@ -20,6 +22,7 @@ const AdminInventoryPage = () => {
       console.error('Failed to load inventory:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -74,8 +77,8 @@ const AdminInventoryPage = () => {
           <h1 style={{ color: 'var(--text-main)', fontSize: '1.75rem', marginBottom: '8px' }}>Blood Stock Inventory</h1>
           <p style={{ color: 'var(--text-muted)' }}>Manage stock levels and low-stock alerts threshold parameters.</p>
         </div>
-        <button onClick={fetchInventory} className="btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px' }}>
-          <RefreshCw size={16} /> Refresh
+        <button onClick={fetchInventory} className="btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px' }} disabled={refreshing}>
+          <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} /> {refreshing ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 

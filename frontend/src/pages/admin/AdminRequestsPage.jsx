@@ -130,7 +130,7 @@ const AdminRequestsPage = () => {
                     </div>
 
                     <p style={{ margin: '8px 0 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                      Requested by: <strong>{req.hospitalName}</strong> ({req.contactNumber})
+                      Requested by: <strong>{req.requestedBy?.role === 'patient' ? 'Patient' : 'Hospital'} - {req.hospitalName}</strong> ({req.contactNumber})
                     </p>
                     {req.reason && (
                       <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>

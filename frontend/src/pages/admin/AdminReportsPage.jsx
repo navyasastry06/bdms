@@ -11,7 +11,7 @@ const AdminReportsPage = () => {
       try {
         const res = await adminService.getReports();
         if (res.success) {
-          setReports(res);
+          setReports(res.reports);
         }
       } catch (error) {
         console.error('Failed to load reports:', error);

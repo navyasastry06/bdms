@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-/* Create an axios instance pointing to our Vite proxy API */
+/* Create an axios instance pointing to our API */
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   withCredentials: true, /* Important: This allows passing HttpOnly cookies (refreshToken) */
   headers: {
     'Content-Type': 'application/json'
@@ -29,8 +29,12 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    /* If error is 401 (Unauthorized) and we haven't retried yet */
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+    /* Do not attempt refresh for auth endpoints themselves */
+    const isAuthEndpoint = originalRequest.url?.includes('/auth/login')
+      || originalRequest.url?.includes('/auth/register')
+      || originalRequest.url?.includes('/auth/refresh');
+
+    if (error.response && error.response.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
 
       try {

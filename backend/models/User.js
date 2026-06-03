@@ -25,10 +25,22 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: {
-      values: ['donor', 'hospital', 'admin'],
-      message: 'Role must be donor, hospital, or admin'
+      values: ['donor', 'hospital', 'admin', 'patient'],
+      message: 'Role must be donor, hospital, admin, or patient'
     },
     required: [true, 'Role is required']
+  },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  resetPasswordToken: {
+    type: String,
+    default: null
+  },
+  resetPasswordExpire: {
+    type: Date,
+    default: null
   },
   refreshToken: {
     type: String,

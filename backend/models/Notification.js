@@ -24,6 +24,11 @@ const notificationSchema = new mongoose.Schema({
   read: {
     type: Boolean,
     default: false
+  },
+  portalRole: {
+    type: String,
+    enum: ['donor', 'hospital', 'admin', 'patient', null],
+    default: null
   }
 }, {
   timestamps: true

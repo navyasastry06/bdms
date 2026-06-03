@@ -6,6 +6,7 @@ const connectDB = async () => {
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error(`MongoDB Connection Error: ${error.message}`);
+    console.error('Verify MONGODB_URI credentials, Atlas user access, and IP whitelist.');
     process.exit(1);
   }
 };

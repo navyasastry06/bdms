@@ -15,7 +15,16 @@ const donorProfileSchema = new mongoose.Schema({
   age: {
     type: Number,
     min: [18, 'Must be at least 18 years old'],
-    max: [65, 'Must be 65 or younger']
+    max: [60, 'Must be 60 or younger']
+  },
+  gender: {
+    type: String,
+    enum: ['Male', 'Female', 'Other']
+  },
+  eligibilityStatus: {
+    type: String,
+    enum: ['Eligible', 'Ineligible'],
+    default: 'Eligible'
   },
   phone: {
     type: String,

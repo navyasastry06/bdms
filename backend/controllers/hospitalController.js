@@ -1,6 +1,7 @@
 const BloodRequest = require('../models/BloodRequest');
 const BloodInventory = require('../models/BloodInventory');
 const HospitalProfile = require('../models/HospitalProfile');
+const DonorProfile = require('../models/DonorProfile');
 const { createNotification, notifyAdmins } = require('../services/notificationService');
 
 /* ==================== GET HOSPITAL DASHBOARD ==================== */
@@ -47,6 +48,21 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const { hospitalName, phone, address, contactPerson, hospitalType } = req.body;
+
+    if (phone) {
+      const sanitizedPhone = phone.toString().replace(/\D/g, '');
+      const [existingDonor, existingHospital] = await Promise.all([
+        DonorProfile.findOne({ phone: sanitizedPhone }),
+        HospitalProfile.findOne({ phone: sanitizedPhone })
+      ]);
+      const duplicateProfile = existingDonor || existingHospital;
+      if (duplicateProfile && duplicateProfile.userId.toString() !== req.user.id.toString()) {
+        return res.status(400).json({
+          success: false,
+          message: 'This phone number is already in use by another account.'
+        });
+      }
+    }
 
     const profile = await HospitalProfile.findOneAndUpdate(
       { userId: req.user.id },
@@ -98,12 +114,33 @@ const createRequest = async (req, res) => {
       reason
     });
 
+    // Auto-register patient profile if contact number matches an existing donor
+    if (contactNumber) {
+      const sanitizedPhone = contactNumber.toString().replace(/\D/g, '');
+      if (sanitizedPhone) {
+        const DonorProfile = require('../models/DonorProfile');
+        const PatientProfile = require('../models/PatientProfile');
+        const donor = await DonorProfile.findOne({ phone: sanitizedPhone });
+        if (donor) {
+          const existingPatient = await PatientProfile.findOne({ userId: donor.userId });
+          if (!existingPatient) {
+            await PatientProfile.create({
+              userId: donor.userId,
+              phone: sanitizedPhone,
+              bloodGroup: bloodGroup || donor.bloodGroup
+            });
+          }
+        }
+      }
+    }
+
     // Notify hospital
     await createNotification(
       req.user.id,
       'Blood Request Submitted',
       `Your request for ${unitsRequired} units of ${bloodGroup} for patient ${patientName} has been submitted and is pending approval.`,
-      'info'
+      'info',
+      'hospital'
     );
 
     // Notify admins

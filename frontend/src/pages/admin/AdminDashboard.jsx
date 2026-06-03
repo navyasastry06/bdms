@@ -47,7 +47,7 @@ const AdminDashboard = () => {
           <h1 style={{ marginBottom: '8px', color: 'var(--text-main)', fontSize: '1.75rem' }}>Overview</h1>
           <p style={{ color: 'var(--text-muted)', margin: 0 }}>System-wide statistics and recent activity.</p>
         </div>
-        <button className="btn-outline">
+        <button className="btn-outline" onClick={() => navigate('/admin/reports')}>
           <TrendingUp size={18} />
           View Full Report
         </button>
@@ -68,10 +68,10 @@ const AdminDashboard = () => {
           <h3 style={{ marginBottom: '20px', fontSize: '1.2rem' }}>Recent Blood Requests</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {requests.length === 0 ? <p>No recent requests.</p> : requests.slice(0, 3).map((req, idx) => (
-              <RequestRow key={idx} hospital={req.hospitalName} group={req.bloodGroup} urgency={req.urgency} status={req.status} />
+              <RequestRow key={idx} patient={req.patientName} group={req.bloodGroup} urgency={req.urgency} status={req.status} />
             ))}
           </div>
-          <button style={{ ...styles.textBtn, marginTop: '20px' }}>View all requests &rarr;</button>
+          <button style={{ ...styles.textBtn, marginTop: '20px' }} onClick={() => navigate('/admin/requests')}>View all requests &rarr;</button>
         </div>
 
         <div className="glass-panel" style={{ padding: '24px' }}>
@@ -84,7 +84,7 @@ const AdminDashboard = () => {
                return <InventoryBar key={idx} group={inv.bloodGroup} percentage={percentage} units={inv.unitsAvailable} color={colors[idx % colors.length]} />
             })}
           </div>
-          <button style={{ ...styles.textBtn, marginTop: '20px' }}>Manage inventory &rarr;</button>
+          <button style={{ ...styles.textBtn, marginTop: '20px' }} onClick={() => navigate('/admin/inventory')}>Manage inventory &rarr;</button>
         </div>
 
       </div>
@@ -106,7 +106,7 @@ const StatCard = ({ title, value, icon }) => (
   </div>
 );
 
-const RequestRow = ({ hospital, group, urgency, status }) => {
+const RequestRow = ({ patient, group, urgency, status }) => {
   const getStatusColor = (s) => {
     switch(s) {
       case 'Pending': return '#f59e0b';
@@ -118,7 +118,7 @@ const RequestRow = ({ hospital, group, urgency, status }) => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', backgroundColor: 'var(--bg-main)', borderRadius: '8px' }}>
       <div>
-        <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{hospital}</h5>
+        <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{patient}</h5>
         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Requested: {group} ({urgency})</span>
       </div>
       <span style={{ fontSize: '0.8rem', fontWeight: '600', padding: '4px 10px', borderRadius: '20px', backgroundColor: `${getStatusColor(status)}20`, color: getStatusColor(status) }}>

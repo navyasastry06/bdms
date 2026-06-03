@@ -8,7 +8,9 @@ const authorize = (...allowedRoles) => {
       });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    const userRoles = req.user.roles || [req.user.role];
+    const hasRole = allowedRoles.some(role => userRoles.includes(role));
+    if (!hasRole) {
       return res.status(403).json({
         success: false,
         message: 'You do not have permission to access this page.'

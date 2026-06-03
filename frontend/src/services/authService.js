@@ -29,6 +29,33 @@ const authService = {
   getMe: async () => {
     const response = await api.get('/auth/me');
     return response.data;
+  },
+
+  /* Verify email via OTP */
+  verifyOtp: async (email, otpCode) => {
+    const response = await api.post('/auth/verify-otp', { email, otpCode });
+    if (response.data.accessToken) {
+      localStorage.setItem('accessToken', response.data.accessToken);
+    }
+    return response.data;
+  },
+
+  /* Resend OTP verification code */
+  resendOtp: async (email) => {
+    const response = await api.post('/auth/resend-otp', { email });
+    return response.data;
+  },
+
+  /* Request password reset link */
+  forgotPassword: async (email) => {
+    const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  /* Reset password with token */
+  resetPassword: async (token, password) => {
+    const response = await api.post(`/auth/reset-password/${token}`, { password });
+    return response.data;
   }
 };
 
