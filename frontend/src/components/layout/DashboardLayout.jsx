@@ -261,7 +261,7 @@ const DashboardLayout = () => {
         </header>
 
         {/* Dashboard Pages Output */}
-        <div style={styles.pageContent} className="animate-fade-in">
+        <div style={styles.pageContent} className="animate-fade-in pageContent">
           <Outlet />
         </div>
       </main>

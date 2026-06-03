@@ -191,6 +191,25 @@ a:hover {
 
 /* Mobile Responsiveness for Layout */
 @media (max-width: 768px) {
+  /* Safely override inline flex/grid only inside the main page content so it doesn't break headers */
+  .pageContent div[style*="display: flex"][style*="row"],
+  .pageContent div[style*="display: flex"]:not([style*="column"]),
+  form div[style*="display: flex"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .pageContent div[style*="display: grid"],
+  form div[style*="display: grid"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Reduce paddings on mobile to save space */
+  .glass-panel {
+    padding: 20px !important;
+  }
+
+  /* Existing rules */
   .mobile-menu-toggle {
     display: flex !important;
   }
@@ -211,5 +230,11 @@ a:hover {
   }
   .sidebar-nav.mobile-open {
     transform: translateX(0) !important;
+  }
+
+  /* Make sure buttons take full width on mobile if they are side-by-side */
+  .btn-primary, .btn-outline {
+    width: 100%;
+    margin-top: 8px;
   }
 }
