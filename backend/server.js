@@ -21,6 +21,9 @@ connectDB();
 
 const app = express();
 
+/* Trust the reverse proxy (Render) so rate limiting works correctly */
+app.set('trust proxy', 1);
+
 /* Security middleware */
 app.use(helmet());
 
