@@ -118,22 +118,9 @@ const register = async (req, res) => {
       });
     }
 
-    /* Verify email domain has active mail servers (MX records) */
-    const domain = normalizedEmail.split('@')[1];
-    let isDomainValid = false;
-    try {
-      const mxRecords = await dns.resolveMx(domain);
-      isDomainValid = mxRecords && mxRecords.length > 0;
-    } catch (dnsErr) {
-      isDomainValid = false;
-    }
-
-    if (!isDomainValid) {
-      return res.status(400).json({
-        success: false,
-        message: 'The email domain does not exist or cannot receive emails.'
-      });
-    }
+    /* We bypass MX record validation here as DNS queries inside cloud containers 
+       can occasionally hang and cause massive registration delays. 
+       The actual OTP delivery acts as our validation mechanism. */
 
     /* We have removed the strict SMTP mailbox verification (port 25) because 
        many cloud hosts (like Render, AWS) block outgoing port 25 by default,
@@ -764,22 +751,7 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    /* Verify email domain has active mail servers (MX records) */
-    const domain = normalizedEmail.split('@')[1];
-    let isDomainValid = false;
-    try {
-      const mxRecords = await dns.resolveMx(domain);
-      isDomainValid = mxRecords && mxRecords.length > 0;
-    } catch (dnsErr) {
-      isDomainValid = false;
-    }
-
-    if (!isDomainValid) {
-      return res.status(400).json({
-        success: false,
-        message: 'The email domain does not exist or cannot receive emails.'
-      });
-    }
+    /* We bypass MX record validation here as well to prevent DNS hangs. */
 
     /* We rely solely on MX record validation and the actual password reset email delivery. */
 
