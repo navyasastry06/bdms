@@ -7,18 +7,23 @@ const getTransporter = async () => {
 
   // Check if SMTP options are set in env
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    // Automatically force Port 465 (SSL) for Gmail on Render to bypass their Port 587 outbound restrictions
+    const isGmail = process.env.SMTP_HOST && process.env.SMTP_HOST.includes('gmail');
+    const port = isGmail ? 465 : parseInt(process.env.SMTP_PORT || '587');
+    const isSecure = isGmail ? true : (process.env.SMTP_SECURE === 'true' || port === 465);
+
     transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true' || parseInt(process.env.SMTP_PORT) === 465,
+      port: port,
+      secure: isSecure,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
       },
-      connectionTimeout: 5000, // 5 seconds to prevent hanging
+      connectionTimeout: 5000,
       greetingTimeout: 5000,
       socketTimeout: 5000,
-      family: 4 // Force IPv4 routing to bypass Render's IPv6 ENETUNREACH error
+      family: 4 // Force IPv4 routing
     });
     console.log('Nodemailer SMTP Transporter configured using env variables.');
     return transporter;
