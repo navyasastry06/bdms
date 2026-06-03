@@ -103,14 +103,22 @@ const createRequest = async (req, res) => {
   try {
     const { patientName, bloodGroup, unitsRequired, urgency, hospitalName, contactNumber, reason } = req.body;
 
+    const sanitizedPhone = contactNumber ? contactNumber.toString().replace(/\D/g, '') : '';
+    if (sanitizedPhone.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Contact number must be exactly 10 digits.' });
+    }
+
+    const profile = await HospitalProfile.findOne({ userId: req.user.id });
+    const actualHospitalName = profile && profile.hospitalName ? profile.hospitalName : hospitalName;
+
     const request = await BloodRequest.create({
       requestedBy: req.user.id,
       patientName,
       bloodGroup,
       unitsRequired,
       urgency: urgency || 'Normal',
-      hospitalName,
-      contactNumber,
+      hospitalName: actualHospitalName,
+      contactNumber: sanitizedPhone,
       reason
     });
 
@@ -157,7 +165,10 @@ const createRequest = async (req, res) => {
     });
   } catch (error) {
     console.error('Create request error:', error);
-    res.status(500).json({ success: false, message: 'Failed to create request.' });
+    const validationMessage = error.name === 'ValidationError'
+      ? Object.values(error.errors).map(err => err.message).join(', ')
+      : 'Failed to create request.';
+    res.status(error.name === 'ValidationError' ? 400 : 500).json({ success: false, message: validationMessage });
   }
 };
 
