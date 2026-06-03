@@ -230,11 +230,21 @@ a:hover {
   }
   .sidebar-nav.mobile-open {
     transform: translateX(0) !important;
+    background-color: var(--bg-main) !important; /* Force solid background */
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15) !important;
+    z-index: 99 !important;
   }
 
   /* Make sure buttons take full width on mobile if they are side-by-side */
   .btn-primary, .btn-outline {
     width: 100%;
     margin-top: 8px;
+  }
+
+  /* Fix notification dropdown overflowing off the screen */
+  .glass-panel[style*="width: 320px"] {
+    width: 90vw !important;
+    max-width: 320px !important;
+    right: -10px !important;
   }
 }

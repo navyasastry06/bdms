@@ -138,7 +138,9 @@ const updateRequestStatus = async (req, res) => {
     const message = `Your emergency blood request for ${request.patientName} (${request.bloodGroup}, ${request.unitsRequired} units) has been ${status.toLowerCase()}.${notes ? ' Admin note: ' + notes : ''}`;
     const type = status === 'Rejected' ? 'warning' : status === 'Fulfilled' ? 'success' : 'info';
     
-    const recipientRole = request.requestedBy?.role || 'hospital';
+    // Blood requests are exclusively managed via the Hospital portal.
+    // Even if the user originally registered as a Donor (Dual Role), this notification belongs in their Hospital dashboard.
+    const recipientRole = 'hospital';
     const recipientId = request.requestedBy?._id || request.requestedBy;
     
     await createNotification(recipientId, title, message, type, recipientRole);
