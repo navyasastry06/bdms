@@ -48,9 +48,9 @@ const FeaturesSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.5, delay: idx * 0.1 }}
-              className="liquid-glass rounded-3xl p-8 hover:translate-y-[-8px] transition-all duration-300 flex flex-col gap-6 border border-white/20"
+              className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(225,29,72,0.12)] hover:border-red-100 hover:-translate-y-3 transition-all duration-500 flex flex-col gap-6 border border-gray-100 relative group"
             >
-              <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-red-100 transition-all duration-300">
                 {feature.icon}
               </div>
 
